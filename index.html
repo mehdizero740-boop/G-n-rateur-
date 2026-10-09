@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dessin Animé IA — 2 minutes depuis ta référence</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+--bg:#0f0f13;--bg2:#1a1a22;--bg3:#22222e;--border:#2e2e3e;
+--ink:#e8e8f0;--dim:#8888a0;--faint:#55556a;
+--acc:#e94560;--acc2:#4a6cf7;--ok:#2d8a4e;--err:#c0392b;
+--r:12px;--fs:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+--fm:ui-monospace,'SF Mono',Menlo,monospace;
+}
+html,body{background:var(--bg)}
+body{font-family:var(--fs);background:var(--bg);color:var(--ink);min-height:100vh;padding:1rem 1rem 20rem;font-size:16px;line-height:1.55;max-width:900px;margin:0 auto}
+header{text-align:center;padding:1.2rem 0 1.4rem;margin-bottom:1rem;border-bottom:1px solid var(--border)}
+h1{font-size:1.6rem;font-weight:700;margin-bottom:.3rem;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{font-size:.85rem;color:var(--dim)}
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--bg3);color:var(--ink);border:1px solid var(--border);border-left:3px solid var(--acc);padding:1rem 1.4rem;border-radius:var(--r);font-size:.9rem;box-shadow:0 8px 32px rgba(0,0,0,.6);z-index:1000;opacity:0;transition:transform .35s,opacity .35s;max-width:90vw;text-align:center;display:flex;align-items:center;gap:.6rem}
+.toast.visible{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{border-left-color:var(--ok)}.toast.error{border-left-color:var(--err)}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.2rem;margin-bottom:1rem}
+.panel.ok{box-shadow:inset 3px 0 0 var(--ok)}
+input[type=password],input[type=text],textarea{width:100%;padding:1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:1rem;margin-bottom:.8rem;font-family:inherit}
+input:focus,textarea:focus{outline:none;border-color:var(--acc)}
+textarea{min-height:70px;resize:vertical;font-family:var(--fm);font-size:.85rem}
+.btn{width:100%;padding:1rem 1.2rem;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:1rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;margin-bottom:.8rem;transition:all .2s;font-family:inherit}
+.btn:hover:not(:disabled){background:var(--bg3);border-color:var(--acc)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{border:none;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:1.2rem;padding:1.5rem;letter-spacing:.12em;font-weight:700}
+.btn-primary:disabled{opacity:.5;background:var(--bg3);color:var(--dim)}
+.btn-download{border:2px solid var(--ok);background:rgba(45,138,78,.15);color:#7ee8a2;font-size:1.1rem;padding:1.3rem;letter-spacing:.1em;font-weight:700}
+.btn-stop{border-color:var(--err);color:var(--err);background:transparent;display:none}
+.btn-stop.visible{display:block}
+.label{display:block;font-size:.85rem;color:var(--dim);margin-bottom:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.status{font-size:.85rem;padding:.8rem 1rem;border-radius:8px;margin-bottom:.6rem;display:flex;align-items:center;gap:.6rem;background:var(--bg);color:var(--dim);border:1px solid var(--border)}
+.status.ok{background:rgba(45,138,78,.08);color:var(--ok);border-color:rgba(45,138,78,.3)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex-shrink:0}
+.status.ok .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.hint{font-size:.8rem;color:var(--dim);margin-top:.5rem;line-height:1.5}
+.hint a{color:var(--acc)}
+
+.ref-zone{position:relative;display:block;border:2px dashed var(--border);border-radius:var(--r);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)}
+.ref-zone:hover{border-color:var(--acc);background:rgba(233,69,96,.03)}
+.ref-zone.has-image{padding:0;border-style:solid;border-color:var(--acc)}
+.ref-zone input[type=file]{display:none}
+.ref-zone .ref-icon{font-size:2.5rem;margin-bottom:.6rem;opacity:.7}
+.ref-zone .ref-text{font-size:1rem;font-weight:600;margin-bottom:.3rem}
+.ref-zone .ref-hint{font-size:.8rem;color:var(--dim)}
+.ref-preview{position:relative;width:100%;max-height:280px;overflow:hidden;border-radius:var(--r)}
+.ref-preview img{width:100%;height:auto;max-height:280px;object-fit:contain;display:block;background:#000}
+.ref-preview .ref-remove{position:absolute;top:.5rem;right:.5rem;background:rgba(192,57,43,.85);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:1rem;cursor:pointer;font-weight:700}
+.ref-preview .ref-label{position:absolute;bottom:0;left:0;right:0;padding:.5rem .8rem;background:linear-gradient(transparent,rgba(15,15,19,.9));font-size:.75rem;font-family:var(--fm);color:var(--acc);letter-spacing:.05em}
+
+.duration-info{background:rgba(233,69,96,.08);border:1px solid var(--acc);border-radius:var(--r);padding:1rem;margin-bottom:1rem;text-align:center}
+.duration-info .num{font-size:1.8rem;font-weight:700;color:var(--acc);display:block;margin-bottom:.3rem}
+.duration-info .txt{font-size:.85rem;color:var(--dim)}
+
+.progress-global{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;margin-bottom:1rem;display:none}
+.progress-global.visible{display:block}
+.progress-bar{height:10px;background:var(--bg);border-radius:5px;overflow:hidden;margin-bottom:.6rem}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0%;transition:width .5s;border-radius:5px}
+.progress-text{font-size:.85rem;display:flex;justify-content:space-between;color:var(--dim);font-family:var(--fm)}
+
+.videos-grid{display:grid;grid-template-columns:1fr;gap:.8rem;margin-top:1rem}
+.video-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.video-card.done{border-color:var(--ok)}
+.video-card.error{border-color:var(--err)}
+.video-card-header{padding:.8rem 1rem;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--bg3);font-weight:600}
+.video-card-body{padding:.8rem}
+.video-card-body video{width:100%;border-radius:6px;background:#000;display:block}
+.video-placeholder{width:100%;aspect-ratio:9/16;background:#0a0a12;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:.85rem;flex-direction:column;gap:.6rem;text-align:center;padding:1rem}
+.spinner{width:24px;height:24px;border:3px solid rgba(233,69,96,.2);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.download-link{display:block;margin-top:.7rem;font-size:.9rem;color:var(--acc);text-decoration:none;text-align:center;padding:.7rem;border:1px solid var(--border);border-radius:6px;font-weight:600}
+.download-link:hover{background:rgba(233,69,96,.08)}
+
+.status-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg3);border-top:1px solid var(--border);color:var(--ink);padding:.9rem 1.2rem;font-size:.9rem;display:flex;align-items:center;gap:.7rem;transform:translateY(100%);transition:transform .35s;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.4)}
+.status-bar.visible{transform:translateY(0)}
+.status-bar .spinner-small{width:14px;height:14px;border:2px solid rgba(233,69,96,.2);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+.hidden{display:none!important}
+@media(max-width:480px){h1{font-size:1.4rem}.duration-info .num{font-size:1.5rem}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🎨 Dessin Animé IA</h1>
+<p class="subtitle">Depuis ta référence · 2 minutes minimum · Téléchargement auto</p>
+</header>
+
+<!-- ═══ ÉTAPE 1 : CLÉ API ═══ -->
+<div class="panel" id="api-panel">
+<label class="label">🔑 Ta clé API Agnes</label>
+<input type="password" id="api-key-input" placeholder="Colle ta clé ici (sk-...)" autocomplete="off" spellcheck="false">
+<button type="button" class="btn" id="api-save-btn">Enregistrer la clé</button>
+<div class="status" id="api-status-line"><span class="dot"></span><span id="api-status-text">Aucune clé enregistrée</span></div>
+<div class="hint">Clé gratuite sur <a href="https://platform.agnes-ai.com" target="_blank">platform.agnes-ai.com</a></div>
+</div>
+
+<!-- ═══ ÉTAPE 2 : IMAGE DE RÉFÉRENCE ═══ -->
+<div class="panel">
+<label class="label">🖼️ Ton image de référence (le personnage principal)</label>
+<label class="ref-zone" id="ref-zone" for="ref-input">
+<input type="file" id="ref-input" accept="image/*">
+<div class="ref-icon">📷</div>
+<div class="ref-text">Appuie ici pour choisir une image</div>
+<div class="ref-hint">Un dessin, une photo, ton personnage — il sera le héros du film</div>
+</label>
+</div>
+
+<!-- ═══ ÉTAPE 3 : HISTOIRE ═══ -->
+<div class="panel">
+<label class="label">✍️ L'histoire en une phrase</label>
+<input type="text" id="story-input" placeholder="Ex : Un chaton part à l'aventure dans une forêt magique" value="Un chaton part à l'aventure dans une forêt magique">
+<div class="hint">💡 2-3 mots suffisent, l'IA imagine tout le reste.</div>
+</div>
+
+<!-- ═══ ÉTAPE 4 : DURÉE ═══ -->
+<div class="panel">
+<label class="label">⏱️ Durée du dessin animé</label>
+<div class="duration-info">
+<span class="num">2 min 00</span>
+<span class="txt">= 12 scènes × 10 secondes</span>
+</div>
+<select id="scene-count-select" style="width:100%;padding:1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:1rem;font-family:inherit">
+<option value="12" selected>⏱️ 2 minutes (12 scènes) — Recommandé</option>
+<option value="15">⏱️ 2 min 30 (15 scènes)</option>
+<option value="20">⏱️ 3 min 20 (20 scènes)</option>
+</select>
+</div>
+
+<!-- ═══ BOUTON PRINCIPAL ═══ -->
+<button type="button" class="btn btn-primary" id="generate-btn" disabled>
+🎬 CRÉER MON DESSIN ANIMÉ
+</button>
+<button type="button" class="btn btn-stop" id="stop-btn">⏹ Arrêter</button>
+
+<!-- ═══ PROGRESSION ═══ -->
+<div class="progress-global" id="progress-global">
+<div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+<div class="progress-text">
+<span id="progress-label">En attente...</span>
+<span id="progress-eta"></span>
+</div>
+</div>
+
+<!-- ═══ BOUTON TOUT TÉLÉCHARGER ═══ -->
+<button type="button" class="btn btn-download hidden" id="download-all-btn">
+⬇️ TOUT TÉLÉCHARGER SUR MON TÉLÉPHONE
+</button>
+
+<!-- ═══ VIDÉOS ═══ -->
+<div class="videos-grid" id="videos-grid"></div>
+
+<!-- ═══ STATUS BAR ═══ -->
+<div class="status-bar" id="status-bar"><div class="spinner-small"></div><span id="status-text">Préparation…</span></div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"><span id="toast-icon">✓</span><span id="toast-text">Message</span></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ══════════════════════════════════════════════════════════════════
+const API_BASE = 'https://apihub.agnes-ai.com/v1';
+const POLL_BASE = 'https://apihub.agnes-ai.com/agnesapi';
+const MODEL_TEXT = 'agnes-2.5-flash';
+const MODEL_VIDEO = 'agnes-video-v2.0';
+const FRAME_RATE = 24;
+const FRAMES_PER_SCENE = 241; // 10 secondes à 24fps
+const API_KEY_STORAGE = 'dessin_anime_api_key';
+const REF_MAX_SIDE = 1024;
+
+const VIDEO_FIRST_POLL_DELAY_SEC = 60;
+const VIDEO_POLL_INTERVALS = [8, 8, 12, 12, 20, 20, 25];
+const VIDEO_MAX_POLL_ATTEMPTS = 100;
+const VIDEO_CREATE_INTERVAL_SEC = 62;
+
+// ══════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════
+const state = {
+  isRunning: false,
+  stopRequested: false,
+  referenceImage: null,
+  story: '',
+  sceneCount: 12,
+  videos: [],
+  script: null
+};
+
+// ══════════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════════
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function setStatus(text){
+  const b=document.getElementById('status-bar');
+  const t=document.getElementById('status-text');
+  if(!b||!t)return;
+  if(text){b.classList.add('visible');t.textContent=text}
+  else b.classList.remove('visible')
+}
+function formatEta(sec){
+  if(sec<60)return Math.round(sec)+'s';
+  const m=Math.floor(sec/60);const s=Math.round(sec%60);
+  return m+'m'+(s>0?' '+s+'s':'');
+}
+
+let toastTimeout=null;
+function showToast(message,type='success',duration=3000){
+  const t=document.getElementById('toast');
+  const i=document.getElementById('toast-icon');
+  const x=document.getElementById('toast-text');
+  if(!t||!i||!x)return;
+  t.classList.remove('visible','success','error');
+  void t.offsetWidth;
+  const icons={success:'✓',error:'✕'};
+  i.textContent=icons[type]||'✓';
+  x.textContent=message;
+  t.classList.add(type);
+  requestAnimationFrame(()=>t.classList.add('visible'));
+  if(toastTimeout)clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>t.classList.remove('visible'),duration);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CLÉ API
+// ══════════════════════════════════════════════════════════════════
+function getApiKey(){
+  try{return(localStorage.getItem(API_KEY_STORAGE)||'').trim()}
+  catch(e){return''}
+}
+function saveApiKey(){
+  const input=document.getElementById('api-key-input');
+  if(!input)return;
+  const key=input.value.trim();
+  if(!key){try{localStorage.removeItem(API_KEY_STORAGE)}catch(e){}updateApiPanel();showToast('Clé supprimée','error');return}
+  try{localStorage.setItem(API_KEY_STORAGE,key);updateApiPanel();showToast('Clé enregistrée ✓','success');input.blur()}
+  catch(e){showToast('Erreur sauvegarde','error')}
+}
+function updateApiPanel(){
+  const panel=document.getElementById('api-panel');
+  const input=document.getElementById('api-key-input');
+  const line=document.getElementById('api-status-line');
+  const text=document.getElementById('api-status-text');
+  const key=getApiKey();
+  if(!panel||!input||!line||!text)return;
+  if(key){
+    panel.classList.add('ok');line.classList.add('ok');
+    text.textContent='Clé active · '+key.slice(0,8)+'…'+key.slice(-4);
+    input.value=key;
+  }else{
+    panel.classList.remove('ok');line.classList.remove('ok');
+    text.textContent='Aucune clé enregistrée';
+    input.value='';
+  }
+  updateGenerateBtn();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// IMAGE DE RÉFÉRENCE
+// ══════════════════════════════════════════════════════════════════
+function fileToDataUri(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=()=>reject(new Error('Erreur lecture'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressImage(dataUrl, maxSide){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let {width,height}=img;
+      const scale=Math.min(1,maxSide/Math.max(width,height));
+      width=Math.round(width*scale);
+      height=Math.round(height*scale);
+      const canvas=document.createElement('canvas');
+      canvas.width=width;canvas.height=height;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,width,height);
+      resolve(canvas.toDataURL('image/jpeg',0.88));
+    };
+    img.onerror=()=>resolve(dataUrl);
+    img.src=dataUrl;
+  });
+}
+
+async function handleReferenceImage(file){
+  if(!file)return;
+  if(!file.type.startsWith('image/')){showToast('Ce n\'est pas une image','error');return}
+  if(file.size>15*1024*1024){showToast('Image trop lourde (max 15 Mo)','error');return}
+  try{
+    setStatus('Chargement de ta référence…');
+    const raw=await fileToDataUri(file);
+    const compressed=await compressImage(raw,REF_MAX_SIDE);
+    state.referenceImage=compressed;
+    updateRefPreview();
+    updateGenerateBtn();
+    setStatus(null);
+    showToast('Image de référence prête ✓','success');
+  }catch(e){
+    setStatus(null);
+    showToast('Erreur chargement image','error');
+  }
+}
+
+function updateRefPreview(){
+  const zone=document.getElementById('ref-zone');
+  if(!zone)return;
+  if(state.referenceImage){
+    zone.classList.add('has-image');
+    zone.innerHTML=
+      '<div class="ref-preview">'+
+        '<img src="'+state.referenceImage+'" alt="Référence">'+
+        '<div class="ref-label">✓ Personnage principal</div>'+
+        '<button type="button" class="ref-remove" id="ref-remove-btn">✕</button>'+
+      '</div>';
+    const btn=document.getElementById('ref-remove-btn');
+    if(btn)btn.addEventListener('click',(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      state.referenceImage=null;
+      updateRefPreview();
+      updateGenerateBtn();
+      showToast('Image retirée','error');
+    });
+  }else{
+    zone.classList.remove('has-image');
+    zone.innerHTML=
+      '<input type="file" id="ref-input" accept="image/*">'+
+      '<div class="ref-icon">📷</div>'+
+      '<div class="ref-text">Appuie ici pour choisir une image</div>'+
+      '<div class="ref-hint">Un dessin, une photo, ton personnage — il sera le héros du film</div>';
+    bindRefInput();
+  }
+}
+
+function bindRefInput(){
+  const input=document.getElementById('ref-input');
+  if(!input)return;
+  input.addEventListener('change',(e)=>{
+    const file=e.target.files&&e.target.files[0];
+    if(file)handleReferenceImage(file);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// API FETCH
+// ══════════════════════════════════════════════════════════════════
+async function apiFetch(url, options = {}, label = 'API') {
+  for (let attempt = 0; attempt < 7; attempt++) {
+    if (state.stopRequested) throw new Error('Arrêt demandé');
+    try {
+      const res = await fetch(url, options);
+      if (res.status === 429) {
+        const wait = [10, 20, 35, 50, 75, 100, 150][Math.min(attempt, 6)];
+        setStatus('L\'IA se prépare… (' + wait + 's)');
+        await sleep(wait * 1000);
+        continue;
+      }
+      if (res.status === 503) {
+        const wait = [5, 10, 15, 20, 30, 45][Math.min(attempt, 5)];
+        setStatus('Service occupé… (' + wait + 's)');
+        await sleep(wait * 1000);
+        continue;
+      }
+      return res;
+    } catch (e) {
+      if (e.message === 'Arrêt demandé') throw e;
+      const wait = [3, 5, 8, 12, 20, 30][Math.min(attempt, 5)];
+      setStatus('Connexion… (' + wait + 's)');
+      await sleep(wait * 1000);
+    }
+  }
+  return fetch(url, options);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PARSER JSON SIMPLE
+// ══════════════════════════════════════════════════════════════════
+function extractJson(text){
+  if(!text)return null;
+  let c=text.trim();
+  const fm=c.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(fm)c=fm[1].trim();
+  const fb=c.indexOf('{');
+  if(fb<0)return null;
+  c=c.slice(fb);
+  try{return JSON.parse(c)}
+  catch(e){
+    const lb=c.lastIndexOf('}');
+    if(lb>0){try{return JSON.parse(c.slice(0,lb+1))}catch(e2){}}
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SCÉNARIO
+// ══════════════════════════════════════════════════════════════════
+function buildScriptPrompt(story, sceneCount){
+  const secondsTotal = sceneCount * 10;
+  return [
+    'Tu es scénariste de dessins animés. Crée une histoire sur : '+story,
+    '',
+    'IMPORTANT : Le personnage principal est EXACTEMENT celui de l\'image de référence fournie par l\'utilisateur.',
+    'Tu dois le décrire fidèlement dans chaque scène :',
+    '- Même apparence (visage, forme, couleurs)',
+    '- Même style visuel (dessin, couleur, ambiance)',
+    '- Le personnage reste IDENTIQUE du début à la fin',
+    '',
+    'STRUCTURE : '+sceneCount+' scènes de 10 secondes = '+(secondsTotal/60).toFixed(1)+' minutes au total.',
+    'La scène 1 = ouverture, la dernière = conclusion.',
+    '',
+    'RÈGLES JSON STRICTES :',
+    '- Chaînes sur UNE SEULE LIGNE',
+    '- Pas de virgule finale',
+    '- Réponds UNIQUEMENT avec le JSON',
+    '',
+    'FORMAT :',
+    '{',
+    '  "title": "titre court",',
+    '  "story": "résumé de l\'histoire en 2 phrases",',
+    '  "character_description": "description anglaise du personnage principal à garder identique dans TOUTES les scènes",',
+    '  "scenes": [',
+    '    {',
+    '      "scene_number": 1,',
+    '      "description": "description visuelle anglaise de la scène",',
+    '      "action": "action anglaise continue de la scène",',
+    '      "line_fr": "phrase française courte (8-12 mots)",',
+    '      "speaker": "nom du personnage"',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    'EXACTEMENT '+sceneCount+' scènes.'
+  ].join('\n');
+}
+
+async function generateScript(story, sceneCount){
+  setStatus('L\'IA écrit l\'histoire…');
+  const body = {
+    model: MODEL_TEXT,
+    messages: [
+      { role: 'system', content: 'Tu réponds UNIQUEMENT en JSON valide, sans markdown.' },
+      { role: 'user', content: buildScriptPrompt(story, sceneCount) }
+    ],
+    temperature: 0.8,
+    max_tokens: 8000,
+    response_format: { type: 'json_object' }
+  };
+  const res = await apiFetch(API_BASE + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getApiKey(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }, 'Scénario');
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content;
+  const script = extractJson(content);
+  if (!script || !script.scenes || !Array.isArray(script.scenes)) throw new Error('Scénario invalide');
+  while (script.scenes.length < sceneCount) {
+    script.scenes.push({
+      scene_number: script.scenes.length + 1,
+      description: 'The same main character in a new scene',
+      action: 'the character continues their journey',
+      line_fr: 'Et maintenant, la suite de notre histoire.',
+      speaker: 'Personnage'
+    });
+  }
+  return script;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// VIDÉO (à partir de l'image de référence)
+// ══════════════════════════════════════════════════════════════════
+function buildVideoPrompt(scene, script){
+  const charDesc = script.character_description || 'the main character from the reference image';
+  return [
+    'Animate this EXACT image as the starting frame.',
+    'The character must remain IDENTICAL to the reference image: same face, same colors, same style, same proportions.',
+    'This is a CONTINUATION of the reference image, not a re-imagination.',
+    'Preserve the exact composition, framing, and visual style of the reference.',
+    '',
+    'CHARACTER: ' + charDesc,
+    '',
+    'SCENE ' + (scene.scene_number || '?') + ': ' + (scene.description || ''),
+    'ACTION: ' + (scene.action || 'subtle continuous movement'),
+    '',
+    'CAMERA: One continuous shot. Smooth, gentle movement.',
+    'No cuts, no handheld, no shake.',
+    '',
+    'AUDIO: No music. Only natural ambient sounds and the character voice.',
+    scene.line_fr ? 'SPOKEN LINE (French): "' + scene.line_fr + '" — the character speaks it clearly, mouth moving.' : '',
+    '',
+    'Format: 9:16 vertical (portrait), 10 seconds. No text, no subtitles, no watermarks.'
+  ].filter(Boolean).join('\n');
+}
+
+async function createVideoTask(prompt, referenceImage){
+  const body = {
+    model: MODEL_VIDEO,
+    prompt: prompt,
+    image: referenceImage,
+    num_frames: FRAMES_PER_SCENE,
+    frame_rate: FRAME_RATE
+  };
+  const res = await apiFetch(API_BASE + '/videos', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getApiKey(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }, 'Vidéo');
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  const videoId = data.video_id || data.id || data.task_id;
+  if (!videoId) throw new Error('Pas de video_id');
+  return videoId;
+}
+
+async function pollVideo(videoId, onProgress){
+  let remaining = VIDEO_FIRST_POLL_DELAY_SEC;
+  while (remaining > 0) {
+    if (state.stopRequested) throw new Error('Arrêt demandé');
+    onProgress('Préparation — ' + remaining + 's');
+    await sleep(1000);
+    remaining--;
+  }
+  for (let attempt = 0; attempt < VIDEO_MAX_POLL_ATTEMPTS; attempt++) {
+    if (state.stopRequested) throw new Error('Arrêt demandé');
+    if (attempt > 0) {
+      const idx = Math.min(attempt - 1, VIDEO_POLL_INTERVALS.length - 1);
+      let r = VIDEO_POLL_INTERVALS[idx];
+      while (r > 0) {
+        if (state.stopRequested) throw new Error('Arrêt demandé');
+        onProgress('Création — ' + r + 's');
+        await sleep(1000);
+        r--;
+      }
+    }
+    const url = POLL_BASE + '?video_id=' + encodeURIComponent(videoId) + '&model_name=' + encodeURIComponent(MODEL_VIDEO);
+    const res = await apiFetch(url, { method: 'GET', headers: { 'Authorization': 'Bearer ' + getApiKey() } }, 'Polling');
+    const d = await res.json();
+    const status = d.status || 'unknown';
+    const progress = d.progress || 0;
+    onProgress('Création — ' + progress + '%');
+    if (status === 'completed' || status === 'succeeded' || status === 'done') {
+      const videoUrl = (d.metadata && d.metadata.url) || d.url || (d.output && d.output.url);
+      if (!videoUrl) throw new Error('Terminé mais pas d\'URL');
+      return videoUrl;
+    }
+    if (status === 'failed' || status === 'error' || status === 'cancelled') throw new Error('Échec (' + status + ')');
+  }
+  throw new Error('Délai dépassé');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TÉLÉCHARGEMENT SUR LE TÉLÉPHONE
+// ══════════════════════════════════════════════════════════════════
+async function downloadVideo(url, filename){
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
+  } catch (e) {
+    console.error('Erreur téléchargement:', e);
+    return false;
+  }
+}
+
+async function downloadAllVideos(){
+  const doneVideos = state.videos.filter(v => v.status === 'done' && v.url);
+  if (doneVideos.length === 0) {
+    showToast('Aucune vidéo à télécharger', 'error');
+    return;
+  }
+  showToast('Téléchargement de ' + doneVideos.length + ' vidéos…', 'success');
+  for (let i = 0; i < doneVideos.length; i++) {
+    const v = doneVideos[i];
+    await downloadVideo(v.url, 'scene-' + String(i + 1).padStart(2, '0') + '.mp4');
+    await sleep(800);
+  }
+  showToast('✓ ' + doneVideos.length + ' vidéos téléchargées sur ton téléphone', 'success', 5000);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDU UI
+// ══════════════════════════════════════════════════════════════════
+function updateGenerateBtn(){
+  const btn = document.getElementById('generate-btn');
+  if (!btn) return;
+  const hasKey = !!getApiKey();
+  const hasRef = !!state.referenceImage;
+  const hasStory = document.getElementById('story-input').value.trim().length > 2;
+  btn.disabled = !hasKey || !hasRef || !hasStory || state.isRunning;
+  if (state.isRunning) btn.textContent = '🎬 Création en cours…';
+  else if (!hasKey) btn.textContent = '🔑 Ajoute d\'abord ta clé API';
+  else if (!hasRef) btn.textContent = '🖼️ Charge une image de référence';
+  else if (!hasStory) btn.textContent = '✍️ Écris ton histoire';
+  else btn.textContent = '🎬 CRÉER MON DESSIN ANIMÉ';
+}
+
+function updateProgressGlobal(done, total, label, eta){
+  const g = document.getElementById('progress-global');
+  const fill = document.getElementById('progress-fill');
+  const lab = document.getElementById('progress-label');
+  const et = document.getElementById('progress-eta');
+  if (!g) return;
+  g.classList.add('visible');
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  if (fill) fill.style.width = pct + '%';
+  if (lab) lab.textContent = label || (done + '/' + total);
+  if (et) et.textContent = eta || '';
+}
+
+function renderVideos(){
+  const grid = document.getElementById('videos-grid');
+  if (!grid) return;
+  grid.innerHTML = state.videos.map((v, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    if (v.status === 'done' && v.url) {
+      return '<div class="video-card done">' +
+        '<div class="video-card-header"><strong>🎬 Scène ' + num + '</strong><span style="color:var(--ok)">✓ Prête</span></div>' +
+        '<div class="video-card-body">' +
+          '<video src="' + v.url + '" controls playsinline preload="metadata"></video>' +
+          '<a class="download-link" href="' + v.url + '" download="scene-' + num + '.mp4" target="_blank" rel="noopener">⬇️ Télécharger cette vidéo</a>' +
+        '</div>' +
+      '</div>';
+    }
+    if (v.status === 'error') {
+      return '<div class="video-card error">' +
+        '<div class="video-card-header"><strong>🎬 Scène ' + num + '</strong><span style="color:var(--err)">✕ Échec</span></div>' +
+        '<div class="video-card-body"><div class="video-placeholder" style="color:var(--err)">' + esc(v.error || 'Erreur') + '</div></div>' +
+      '</div>';
+    }
+    return '<div class="video-card">' +
+      '<div class="video-card-header"><strong>🎬 Scène ' + num + '</strong><span>' + esc(v.progress || 'En attente…') + '</span></div>' +
+      '<div class="video-card-body">' +
+        '<div class="video-placeholder"><div class="spinner"></div><span>' + esc(v.progress || 'En attente…') + '</span></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function revealDownloadAllButton(){
+  const btn = document.getElementById('download-all-btn');
+  if (!btn) return;
+  const doneCount = state.videos.filter(v => v.status === 'done' && v.url).length;
+  if (doneCount > 0) btn.classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE PRINCIPAL
+// ══════════════════════════════════════════════════════════════════
+async function startGeneration(){
+  if(state.isRunning)return;
+  if(!getApiKey()){showToast('Ajoute ta clé API','error');return}
+  if(!state.referenceImage){showToast('Charge une image de référence','error');return}
+  const story = document.getElementById('story-input').value.trim();
+  if(story.length < 3){showToast('Écris ton histoire','error');return}
+
+  state.isRunning = true;
+  state.stopRequested = false;
+  state.story = story;
+  state.sceneCount = parseInt(document.getElementById('scene-count-select').value, 10);
+  state.videos = [];
+  state.script = null;
+
+  document.getElementById('stop-btn').classList.add('visible');
+  document.getElementById('generate-btn').disabled = true;
+  document.getElementById('download-all-btn').classList.add('hidden');
+  document.getElementById('videos-grid').innerHTML = '';
+
+  // Init videos array
+  for(let i = 0; i < state.sceneCount; i++){
+    state.videos.push({ status: 'pending', progress: 'En attente…', url: null });
+  }
+  renderVideos();
+
+  const totalStart = Date.now();
+  let completed = 0;
+
+  try {
+    // ─── ÉTAPE 1 : Scénario ───
+    updateProgressGlobal(0, state.sceneCount, 'L\'IA écrit l\'histoire…', '');
+    const script = await generateScript(story, state.sceneCount);
+    state.script = script;
+
+    // ─── ÉTAPE 2 : Vidéos ───
+    for(let i = 0; i < state.sceneCount; i++){
+      if(state.stopRequested)break;
+
+      const scene = script.scenes[i];
+      state.videos[i].status = 'loading';
+      state.videos[i].progress = 'Initialisation…';
+      renderVideos();
+
+      const elapsed = (Date.now() - totalStart) / 1000;
+      const remaining = state.sceneCount - i;
+      const avgTimePerScene = completed > 0 ? elapsed / completed : 90;
+      const eta = remaining * avgTimePerScene;
+      updateProgressGlobal(completed, state.sceneCount,
+        'Scène ' + (i+1) + '/' + state.sceneCount + '…',
+        '≈ ' + formatEta(eta) + ' restant');
+
+      try {
+        const prompt = buildVideoPrompt(scene, script);
+        const videoId = await createVideoTask(prompt, state.referenceImage);
+
+        const videoUrl = await pollVideo(videoId, (prog) => {
+          state.videos[i].progress = prog;
+          renderVideos();
+        });
+
+        state.videos[i].status = 'done';
+        state.videos[i].url = videoUrl;
+        state.videos[i].progress = 'Prête';
+        renderVideos();
+
+        // ⚡ Téléchargement automatique sur le téléphone
+        const num = String(i + 1).padStart(2, '0');
+        await downloadVideo(videoUrl, 'scene-' + num + '.mp4');
+        showToast('✓ Scène ' + (i+1) + ' téléchargée sur ton téléphone', 'success', 2500);
+
+        completed++;
+        revealDownloadAllButton();
+
+      } catch(e) {
+        if(e.message === 'Arrêt demandé')break;
+        state.videos[i].status = 'error';
+        state.videos[i].error = e.message;
+        renderVideos();
+      }
+
+      // Pause entre les créations (62s obligatoire)
+      if(i < state.sceneCount - 1 && !state.stopRequested){
+        let wait = VIDEO_CREATE_INTERVAL_SEC;
+        while(wait > 0 && !state.stopRequested){
+          setStatus('Respiration — prochaine scène dans ' + wait + 's');
+          await sleep(1000);
+          wait--;
+        }
+      }
+    }
+
+    const totalElapsed = (Date.now() - totalStart) / 1000;
+    setStatus('✦ Terminé — ' + completed + '/' + state.sceneCount + ' scènes en ' + formatEta(totalElapsed) + ' ✦');
+    await sleep(4000);
+    setStatus(null);
+    showToast('✓ ' + completed + ' vidéos prêtes et téléchargées !', 'success', 5000);
+
+  } catch(e) {
+    if(e.message === 'Arrêt demandé'){
+      setStatus('Arrêté');
+      await sleep(2000);
+      setStatus(null);
+    } else {
+      setStatus('Erreur : ' + e.message.slice(0, 60));
+      await sleep(3000);
+      setStatus(null);
+      showToast('Erreur : ' + e.message.slice(0, 60), 'error', 5000);
+    }
+  }
+
+  state.isRunning = false;
+  state.stopRequested = false;
+  document.getElementById('stop-btn').classList.remove('visible');
+  updateGenerateBtn();
+  revealDownloadAllButton();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+(function init(){
+  document.getElementById('api-save-btn').addEventListener('click', saveApiKey);
+  document.getElementById('api-key-input').addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); saveApiKey(); }
+  });
+
+  bindRefInput();
+
+  document.getElementById('story-input').addEventListener('input', updateGenerateBtn);
+  document.getElementById('scene-count-select').addEventListener('change', updateGenerateBtn);
+  document.getElementById('generate-btn').addEventListener('click', startGeneration);
+  document.getElementById('stop-btn').addEventListener('click', () => {
+    state.stopRequested = true;
+    setStatus('Arrêt en cours…');
+  });
+  document.getElementById('download-all-btn').addEventListener('click', downloadAllVideos);
+
+  const savedKey = getApiKey();
+  if(savedKey) document.getElementById('api-key-input').value = savedKey;
+  updateApiPanel();
+  updateGenerateBtn();
+  renderVideos();
+})();
+</script>
+
+</body>
+</html>
